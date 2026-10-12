@@ -59,5 +59,12 @@ Checked with this repository on one NVIDIA GB300:
   without guidance) with `joint_r32/25k`;
 - fine-tuning `joint_r32/25k` and `hybrid_fullvideo_dir150k_norm629k`
   (`*/finetune_from_checkpoint.yaml`) and inference from the resulting checkpoints.
+- fine-tuning a YAM checkpoint on single ABC-130k tasks (`folding`, `pen_caps`, `assembly`) and on
+  the three together, continuing such a run for more epochs (`resume` with a larger step budget),
+  and evaluating the results on whole validation episodes
+  (`configs/infer/abc130k/fold_pen_bottle_heldout.yaml`);
+- serving a fine-tuned checkpoint with `trvam serve` and querying it with
+  `scripts/eval/check_server.py`, whose action errors match the open-loop evaluation of the same
+  frames.
 
 The other LIBERO checkpoints have the same format and configuration.
