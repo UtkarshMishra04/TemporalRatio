@@ -217,11 +217,12 @@ code.
 ## Citation
 
 ```bibtex
-@article{mishra2026temporalratio,
-  title   = {Understanding and Mitigating the Video-Action Generalization Gap via Temporal Ratio},
-  author  = {Mishra, Utkarsh A. and Chen, Yongxin and Xu, Danfei and Liu, Yang and Chen, Xi and Mao, Jiayuan},
-  journal = {arXiv preprint arXiv:2607.08127},
-  year    = {2026}
+@inproceedings{mishra2026temporalratio,
+  title     = {Understanding and Mitigating the Video-Action Generalization Gap via Temporal Ratio},
+  author    = {Mishra, Utkarsh A. and Chen, Yongxin and Xu, Danfei and Liu, Yang and Chen, Xi and Mao, Jiayuan},
+  booktitle = {10th Annual Conference on Robot Learning},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=mlF6DhhBNF}
 }
 ```
 

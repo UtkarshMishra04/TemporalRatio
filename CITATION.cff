@@ -18,11 +18,17 @@ authors:
   - given-names: Jiayuan
     family-names: Mao
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "Understanding and Mitigating the Video-Action Generalization Gap via Temporal Ratio"
-  journal: "arXiv preprint arXiv:2607.08127"
+  collection-title: "10th Annual Conference on Robot Learning"
+  conference:
+    name: "10th Annual Conference on Robot Learning"
   year: 2026
-  url: "https://arxiv.org/abs/2607.08127"
+  url: "https://openreview.net/forum?id=mlF6DhhBNF"
+  identifiers:
+    - type: url
+      value: "https://arxiv.org/abs/2607.08127"
+      description: "arXiv preprint"
   authors:
     - given-names: Utkarsh A.
       family-names: Mishra
