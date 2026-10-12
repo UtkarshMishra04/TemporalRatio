@@ -1,0 +1,20 @@
+TemporalRatio
+Copyright 2026 The TemporalRatio authors
+
+This repository is licensed under the Apache License, Version 2.0 (see LICENSE). It contains
+modified code from the following projects, also licensed under the Apache License, Version 2.0:
+
+openpi (https://github.com/Physical-Intelligence/openpi)
+  Copyright 2024 Physical Intelligence
+  Used in src/temporal_ratio (data transforms, normalization, policy and training utilities, the
+  Gemma action expert), src/temporal_ratio/models/transformers_replace and packages/openpi-client.
+  Modified: video-conditioned action head, joint video-action training, package layout.
+
+Cosmos-Predict2.5 (https://github.com/nvidia-cosmos/cosmos-predict2.5)
+  Copyright 2025 NVIDIA CORPORATION & AFFILIATES
+  Vendored in src/cosmos_video (originally the cosmos_predict2 package; see src/cosmos_video/README.md).
+  Modified: intermediate DiT feature extraction and early-stopped denoising for the action head,
+  experiment configs for LIBERO and bimanual YAM data, import paths.
+
+The model weights used and produced by this code are subject to their own licenses, in particular
+the NVIDIA Open Model License for Cosmos-Predict2.5 and Cosmos-Reason1 and the Gemma Terms of Use.

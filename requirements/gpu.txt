@@ -1,0 +1,84 @@
+# Full training / inference stack (Python 3.11). torch and torchvision are installed first from the
+# PyTorch index matching your CUDA driver (scripts/setup/install.sh); everything else is pinned here.
+# Verified on NVIDIA GB300 (aarch64, CUDA 13) with torch 2.11.0 / torchvision 0.26.0 (cu130).
+numpy==2.3.5
+einops==0.8.2
+pillow
+safetensors==0.7.0
+tqdm==4.67.1
+tqdm-loggable==0.2
+typing-extensions
+imageio==2.37.2
+imageio-ffmpeg==0.6.0
+opencv-python-headless==4.13.0.90
+scipy==1.17.0
+pandas==3.0.0
+pyarrow==23.0.0
+matplotlib==3.10.8
+h5py==3.15.1
+regex
+av==16.1.0
+psutil
+tabulate
+termcolor==3.3.0
+pyyaml==6.0.3
+requests==2.32.5
+ftfy
+boto3
+filelock==3.20.3
+beartype==0.22.9
+rich==14.3.1
+polars==1.37.1
+pynvml
+wandb==0.24.2
+tyro==1.0.5
+fsspec[gcs]>=2024.6.0
+gcsfs
+etils==1.13.0
+# JAX (CPU) is only used by the openpi-derived config / transform utilities.
+jax==0.5.3
+jaxlib==0.5.3
+flax==0.10.2
+orbax-checkpoint==0.11.13
+tensorstore==0.1.80
+ml_dtypes==0.5.4
+chex==0.1.90
+optax==0.2.6
+equinox==0.13.4
+jaxtyping==0.2.36
+augmax==0.4.1
+dm-tree==0.1.9
+ml_collections==1.1.0
+numpydantic==1.7.0
+treescope==0.1.10
+pydantic==2.12.5
+# Hugging Face stack. transformers is pinned for scripts/setup/patch_transformers.py.
+transformers==4.53.2
+tokenizers==0.21.4
+huggingface-hub[hf-transfer]==0.36.0
+hf-xet==1.2.0
+sentencepiece==0.2.1
+accelerate
+peft==0.18.1
+diffusers==0.36.0
+qwen-vl-utils
+# Vendored Cosmos-Predict2.5 runtime
+hydra-core==1.3.2
+omegaconf==2.3.0
+attrs==25.4.0
+loguru
+fvcore
+webdataset
+pytz
+megatron-core==0.16.0
+# decord fork with aarch64 and x86_64 wheels (provides the `decord` module)
+decord2==3.4.0
+# openpi-client runtime dependencies (the package itself is installed with --no-deps)
+msgpack==1.1.2
+Tree==0.2.4
+websockets==16.0
+# LeRobot datasets (v2.x format)
+lerobot @ git+https://github.com/huggingface/lerobot@0cf864870cf29f4738d3ade893e6fd13fbd7cdb5
+datasets<3
+cmake<4.3
+pytest==9.0.2

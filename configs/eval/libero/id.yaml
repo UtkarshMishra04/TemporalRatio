@@ -1,0 +1,8 @@
+# Closed-loop LIBERO evaluation on the four in-distribution suites.
+inference:
+  _base_: ../../infer/libero/tr_adaptive.yaml
+eval:
+  split: id
+  num_trials_per_task: 10
+  seeds: [7]
+  output_dir: results/libero/id

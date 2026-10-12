@@ -1,0 +1,14 @@
+# Multi-task joint video-action training on the 22 ABC-130k tasks shared with the pp24 training
+# set (LoRA r32; released checkpoint: 878500).
+_base_: _abc130k.yaml
+name: abc130k_pp24_joint_lora_r32
+paradigm: joint
+stages:
+  - name: joint
+    mode: joint_full
+    trainer: dual_resolution
+    steps: 1500000
+    video_lr: 5.6e-5
+    action_lr: 3.0e-4
+    video_loss_weight: 0.5
+    video_aux_every_k: 500000

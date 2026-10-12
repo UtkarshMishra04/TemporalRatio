@@ -1,0 +1,28 @@
+# Fine-tune a released YAM checkpoint on ABC-130k T-shirt folding, pen-cap opening and bottle-cap
+# unscrewing (pen caps are new to the checkpoints). Set TR_FINETUNE_FROM=<ckpt step dir> or edit
+# the two paths:
+#   model.base_video_checkpoint : <ckpt>/video_model_full.pt   (fine-tuned DiT; LoRA already merged)
+#   model.action_head_init      : <ckpt>                       (directory with model.safetensors)
+# The checkpoint's normalization statistics are kept (data.norm_stats); on a single GPU:
+#   TR_FINETUNE_FROM=<ckpt> trvam train configs/train/abc130k/finetune_from_checkpoint.yaml --gpus 1 \
+#       --set data.lerobot_home=<converted ABC-130k root>
+_base_: _abc130k.yaml
+name: abc130k_finetune
+paradigm: joint
+data:
+  action_dataset: videoVLA_abc130k_fold_pen_bottle_short
+  video_dataset: abc130k_fold_pen_bottle
+  norm_stats: ${TR_FINETUNE_FROM:-CHANGE_ME}/assets
+model:
+  base_video_checkpoint: ${TR_FINETUNE_FROM:-CHANGE_ME}/video_model_full.pt
+  action_head_init: ${TR_FINETUNE_FROM:-CHANGE_ME}
+stages:
+  - name: joint
+    mode: joint_full
+    trainer: dual_resolution
+    steps: 20000
+    video_lr: 5.6e-5
+    action_lr: 3.0e-4
+    video_loss_weight: 0.5
+    video_aux_every_k: 500000
+    save_interval: 1000

@@ -1,0 +1,42 @@
+# Long-horizon video adaptation (paper: "93f S3"):
+#   S1 video-only on 93-frame clips, S2 joint (93-frame video loss + 17-frame action loss),
+#   S3 action head on the frozen S2 DiT (initialized from the S2 action head).
+_base_: _libero.yaml
+name: libero_93f_lora_r32
+paradigm: three_stage
+data: {video_num_frames: 93}
+optim:
+  video_batch_size: 2
+  action_batch_size: 8
+  gradient_checkpointing: false
+stages:
+  - name: s1_video
+    mode: video_only
+    steps: 10000
+    video_lr: 2.0e-5
+    action_lr: 0.0
+    video_loss_weight: 5.0
+    init_video_from: base
+    save_interval: 2000
+    video_log_interval: 2000
+  - name: s2_joint
+    mode: joint_full
+    steps: 100000
+    video_lr: 2.0e-5
+    action_lr: 1.0e-4
+    video_loss_weight: 5.0
+    init_video_from: previous_stage
+    save_interval: 2000
+    video_log_interval: 2000
+  - name: s3_action
+    mode: frozen_video
+    trainer: standard              # 17-frame action trainer
+    steps: 40000
+    video_lr: 0.0
+    action_lr: 1.0e-4
+    video_loss_weight: 0.0
+    init_video_from: previous_stage
+    init_action_from: previous_stage
+    gradient_checkpointing: true   # S3 used the trainer default
+    save_interval: 4000
+    video_log_interval: 4000

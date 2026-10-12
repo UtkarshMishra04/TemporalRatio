@@ -1,0 +1,16 @@
+# Joint training with 93-frame video clips and full fine-tuning of the DiT
+# (released checkpoint: full_joint_93f).
+_base_: joint_93f_lora_r32.yaml
+name: libero_joint_93f_full
+adaptation: {video: full}
+optim:
+  video_batch_size: 1
+  gradient_checkpointing: true
+stages:
+  - name: joint
+    mode: joint_full
+    steps: 100000
+    video_lr: 1.0e-5
+    action_lr: 1.0e-4
+    video_loss_weight: 5.0
+    video_aux_every_k: 4

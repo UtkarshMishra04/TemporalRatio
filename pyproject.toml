@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "temporal-ratio"
+version = "0.1.0"
+description = "Video-action models (Cosmos-Predict2.5 2B + Gemma-300M action head) with Temporal Ratio guidance"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+# The config system, the CLI and the CPU test suite only need these. The full GPU stack
+# (torch, transformers, lerobot, ...) is pinned in requirements/gpu.txt; see docs/install.md.
+dependencies = ["numpy", "pyyaml"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pydantic", "numpydantic"]
+
+[project.scripts]
+trvam = "temporal_ratio.cli:main"
+
+[project.urls]
+Paper = "https://arxiv.org/abs/2607.08127"
+Homepage = "https://umishra.me/temporal-ratio"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/temporal_ratio", "src/cosmos_video"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["src/cosmos_video", "src/temporal_ratio/models/transformers_replace", "packages"]
+
+[tool.ruff.lint]
+# Correctness checks for the whole tree; the stricter set applies to the modules written for the release.
+select = ["E9", "F63", "F7", "F82"]
+# F722: jaxtyping shape annotations such as Float[Array, "b t"] are strings, not code.
+ignore = ["F722"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]

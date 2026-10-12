@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+/build/
+/dist/
+
+# Runs and data (never commit checkpoints, datasets or rollouts)
+/checkpoints/
+/results/
+/outputs/
+/wandb/
+/data/
+*.pt
+*.safetensors
+*.mp4
+
+# Normalization statistics: only the shipped LIBERO and fold_pen_bottle statistics are tracked
+/assets/*
+!/assets/videoVLA_libero_short/
+!/assets/videoVLA_abc130k_fold_pen_bottle_short/
+
+# LIBERO checkout for closed-loop evaluation (docs/install.md)
+/third_party/

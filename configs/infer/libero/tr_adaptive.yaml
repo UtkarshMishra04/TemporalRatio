@@ -1,0 +1,8 @@
+# TR-adaptive guidance (paper method): weights scaled by s = clip(TR/TR_0 - 1, 0, s_max).
+_base_: flat.yaml
+guidance:
+  type: tr_adaptive
+  tr_layer: 13
+  tr_baseline: per_episode
+  s_max: 2.0
+  legacy_flat_floor: false        # true reproduces the original research-code behaviour

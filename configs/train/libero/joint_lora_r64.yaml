@@ -1,0 +1,3 @@
+_base_: joint_lora_r32.yaml
+name: libero_joint_lora_r64
+adaptation: {lora: {rank: 64, alpha: 64}}

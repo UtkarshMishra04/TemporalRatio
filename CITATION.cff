@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper."
+title: "TemporalRatio"
+repository-code: "https://github.com/UtkarshMishra04/TemporalRatio"
+url: "https://umishra.me/temporal-ratio/"
+license: Apache-2.0
+authors:
+  - given-names: Utkarsh A.
+    family-names: Mishra
+  - given-names: Yongxin
+    family-names: Chen
+  - given-names: Danfei
+    family-names: Xu
+  - given-names: Yang
+    family-names: Liu
+  - given-names: Xi
+    family-names: Chen
+  - given-names: Jiayuan
+    family-names: Mao
+preferred-citation:
+  type: article
+  title: "Understanding and Mitigating the Video-Action Generalization Gap via Temporal Ratio"
+  journal: "arXiv preprint arXiv:2607.08127"
+  year: 2026
+  url: "https://arxiv.org/abs/2607.08127"
+  authors:
+    - given-names: Utkarsh A.
+      family-names: Mishra
+    - given-names: Yongxin
+      family-names: Chen
+    - given-names: Danfei
+      family-names: Xu
+    - given-names: Yang
+      family-names: Liu
+    - given-names: Xi
+      family-names: Chen
+    - given-names: Jiayuan
+      family-names: Mao

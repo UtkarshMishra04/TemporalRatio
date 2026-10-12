@@ -1,0 +1,12 @@
+# Open-loop evaluation over whole validation (held-out) episodes of T-shirt folding, pen-cap
+# opening and bottle-cap unscrewing: one query every 150 frames (5 s) from the start to the end of
+# the first 20 episodes of each split (pen caps and bottle caps have 7 and 5). Besides the raw
+# errors, report.json gives them in units of each split's per-dimension action standard deviation
+# (action_rmse_std, action_mae_std, first_action_mae_std; first_k_* over the first 25 actions).
+#   trvam infer configs/infer/abc130k/fold_pen_bottle_heldout.yaml --set checkpoint=<ckpt>
+_base_: fold_pen_bottle.yaml
+replan_every: 150
+offline:
+  episodes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  max_steps: null
+  output_dir: results/infer/fold_pen_bottle_heldout

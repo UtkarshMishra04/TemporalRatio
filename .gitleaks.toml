@@ -1,0 +1,8 @@
+title = "TemporalRatio"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Files that describe credential patterns without containing credentials"
+paths = ['''tests/test_no_secrets\.py''']

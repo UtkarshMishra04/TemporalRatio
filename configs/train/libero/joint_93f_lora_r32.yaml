@@ -1,0 +1,18 @@
+# Joint training with 93-frame video clips (24 latent frames) for the video loss and 17-frame
+# action data, dual-resolution trainer (released checkpoints: joint_93f_r32; also _r16, _r64).
+_base_: _libero.yaml
+name: libero_joint_93f_lora_r32
+paradigm: joint
+data: {video_num_frames: 93}
+optim:
+  video_batch_size: 2
+  action_batch_size: 8
+  gradient_checkpointing: false
+stages:
+  - name: joint
+    mode: joint_full
+    steps: 100000
+    video_lr: 2.0e-5
+    action_lr: 1.0e-4
+    video_loss_weight: 5.0
+    video_aux_every_k: 4          # 17-frame auxiliary video loss every 4 steps

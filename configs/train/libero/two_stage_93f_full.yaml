@@ -1,0 +1,24 @@
+# As two_stage_93f_lora_r32 with full fine-tuning of the DiT in stage 1
+# (released checkpoints: full_2stage_93f; full_2stage_93f_L17 uses model.feature_layer=17).
+_base_: two_stage_93f_lora_r32.yaml
+name: libero_two_stage_93f_full
+adaptation: {video: full}
+optim:
+  video_batch_size: 1
+  gradient_checkpointing: true
+stages:
+  - name: video
+    mode: joint_full
+    steps: 40000
+    video_lr: 1.0e-5
+    action_lr: 0.0
+    video_loss_weight: 5.0
+    init_video_from: base
+  - name: action
+    mode: frozen_video
+    trainer: standard
+    steps: 100000
+    video_lr: 0.0
+    action_lr: 1.0e-4
+    video_loss_weight: 0.0
+    init_video_from: previous_stage

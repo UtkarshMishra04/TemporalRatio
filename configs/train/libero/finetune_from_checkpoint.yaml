@@ -1,0 +1,18 @@
+# Fine-tune a released LIBERO checkpoint (a step directory, e.g. from `trvam download`).
+# Set TR_FINETUNE_FROM=<ckpt dir> or edit the two paths:
+#   model.base_video_checkpoint : <ckpt>/video_model_full.pt   (fine-tuned DiT; LoRA already merged)
+#   model.action_head_init      : <ckpt>                       (directory with model.safetensors)
+# New LoRA adapters (adaptation.lora) are trained on top of the checkpoint's DiT.
+_base_: _libero.yaml
+name: libero_finetune
+paradigm: joint
+model:
+  base_video_checkpoint: ${TR_FINETUNE_FROM:-CHANGE_ME}/video_model_full.pt
+  action_head_init: ${TR_FINETUNE_FROM:-CHANGE_ME}
+stages:
+  - name: joint
+    mode: joint_full
+    steps: 10000
+    video_lr: 1.0e-4
+    action_lr: 1.0e-4
+    video_loss_weight: 5.0

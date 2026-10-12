@@ -1,0 +1,8 @@
+# Flat (constant-weight) language + plan guidance in velocity space.
+_base_: no_guidance.yaml
+guidance:
+  type: flat
+  space: velocity
+  w_lang: 0.1
+  w_plan: 0.1
+  plan_latent_frames: 24

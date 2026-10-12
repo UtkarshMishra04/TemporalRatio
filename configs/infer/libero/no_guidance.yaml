@@ -1,0 +1,10 @@
+# LIBERO policy inference without guidance. Point `checkpoint` at a checkpoint step directory.
+checkpoint: ${TR_CHECKPOINT:-checkpoints/libero/CHANGE_ME}
+policy_config: videoVLA_libero_short
+video_denoising_steps: 6          # video DiT denoising steps
+feature_extraction_step: 2        # action head reads block-19 features after this many steps
+generate_video: false             # true: finish denoising + VAE-decode the predicted future
+replan_every: 10
+tr_log_layers: [2, 5, 10, 13, 15]
+guidance:
+  type: none

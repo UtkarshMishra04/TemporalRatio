@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: CPU tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install
+        run: |
+          uv venv --python ${{ matrix.python }}
+          uv pip install -e ".[test]"
+      - name: Unit tests (configs, golden launcher equivalence, TR / guidance math, secret scan)
+        run: .venv/bin/pytest -q
+      - name: CLI dry runs
+        run: |
+          for f in configs/train/libero/*.yaml configs/train/abc130k/*.yaml; do
+            case "$(basename "$f")" in _*) continue;; esac
+            TR_FINETUNE_FROM=/tmp/ckpt .venv/bin/trvam train "$f" --dry-run > /dev/null
+          done
+          TR_CHECKPOINT=/tmp/ckpt .venv/bin/trvam eval-libero configs/eval/libero/id.yaml --dry-run > /dev/null
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx ruff check .
+      - name: Strict lint for the release modules
+        run: >-
+          uvx ruff check --select E,F,W,I,B,UP --ignore E501
+          src/temporal_ratio/config src/temporal_ratio/cli.py src/temporal_ratio/inference.py
+          src/temporal_ratio/offline.py src/temporal_ratio/guidance/scale.py src/temporal_ratio/guidance/tr.py
+          src/temporal_ratio/data/abc130k.py src/temporal_ratio/data/video_decode.py tests
+
+  secrets:
+    name: Secret scan (gitleaks, full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
