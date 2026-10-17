@@ -306,9 +306,9 @@ class JointVideoActionModel(nn.Module):
         """Video DiT forward: flow matching velocity prediction loss + optional REPA loss.
 
         Matches the original Cosmos Predict2.5 training pipeline exactly:
-        1. Sample t ~ uniform(0, 1)
+        1. Sample t ~ logit-normal(0, 1) (the model config's train_time_distribution)
         2. Map to discrete timesteps via noise_scheduler
-        3. Get sigmas from noise_scheduler (shift=3)
+        3. Get sigmas from noise_scheduler (shift=5)
         4. Interpolate: x_t = epsilon * sigma + x0 * (1 - sigma)
         5. Predict velocity, compute MSE loss (uniform time weighting)
 

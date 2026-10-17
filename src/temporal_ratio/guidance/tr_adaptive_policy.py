@@ -146,7 +146,7 @@ class AdaptiveActionCFGWrapper(_base_policy.BasePolicy):
             target_denoising_steps=None,
         )
         feat = vel_pred[vp.inference_denoising_steps][vp.feature_id].clone()
-        ts = vel_ts[vp.inference_denoising_steps].unsqueeze(0).to(torch.float32) / 1000.0
+        ts = vp.head_timestep(vel_ts[vp.inference_denoising_steps])
         return feat, ts, vid_lat
 
     def _run_v2w_uncond(self, image_pil, num_video_frames, image_sizes):
@@ -171,7 +171,7 @@ class AdaptiveActionCFGWrapper(_base_policy.BasePolicy):
             target_denoising_steps=None,
         )
         feat = vel_pred[vp.inference_denoising_steps][vp.feature_id].clone()
-        ts = vel_ts[vp.inference_denoising_steps].unsqueeze(0).to(torch.float32) / 1000.0
+        ts = vp.head_timestep(vel_ts[vp.inference_denoising_steps])
         return feat, ts
 
     @override

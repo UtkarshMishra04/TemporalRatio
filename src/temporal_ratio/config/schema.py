@@ -157,6 +157,8 @@ class StageSpec:
     #: Per action sample, probability of hiding the first latent frame (the clean conditioning
     #: frame) from the action head, so that it relies on the predicted frames; 0 = off.
     action_first_frame_drop_prob: float = 0.0
+    #: Per action sample, probability of zeroing the robot state fed to the action head; 0 = off.
+    state_dropout_rate: float = 0.0
     #: Also save at every multiple of this many steps (e.g. one epoch) and never delete those
     #: checkpoints; the others are pruned to the 5 most recent.
     keep_every: int | None = None
@@ -254,6 +256,8 @@ class TrainExperiment:
                 raise ConfigError(f"stage '{s.name}': keep_every must be positive")
             if not 0 <= s.action_first_frame_drop_prob < 1:
                 raise ConfigError(f"stage '{s.name}': action_first_frame_drop_prob must be in [0, 1)")
+            if not 0 <= s.state_dropout_rate < 1:
+                raise ConfigError(f"stage '{s.name}': state_dropout_rate must be in [0, 1)")
             if s.mode == "frozen_video":
                 if s.video_lr != 0:
                     self.warnings.append(

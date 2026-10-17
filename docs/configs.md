@@ -81,6 +81,9 @@ conditioning frame, from the action head for that fraction of action samples, so
 learns to use the DiT features of the predicted frames. The DiT still sees the frame, and inference
 is unchanged.
 
+`state_dropout_rate` (per stage, default 0) zeroes the robot state fed to the action head for that
+fraction of action samples during training.
+
 `keep_every` (per stage) also saves at every multiple of that many steps and never deletes those
 checkpoints. Runs resume from their latest checkpoint by default (`resume: true`); `overwrite: true`
 starts over. See [training.md](training.md#continuing-a-run) for training a run for more epochs.

@@ -22,6 +22,10 @@ with and the inference settings ([configs.md](configs.md#inference-configs)). Th
    features of the 5 latent frames condition the action head, which integrates
    `action_denoising_steps` flow-matching steps into an action chunk.
 
+The action head is conditioned on the features' noise level in the variable it was trained with:
+the fraction `u` in [0, 1) that the DiT's training scheduler maps to that noise level (e.g.
+`u` = 0.336 for sigma 0.908, i.e. 6 video steps with features after 2).
+
 With `generate_video: false` (default) the video model stops at step 3 and skips video CFG. With
 `generate_video: true` it runs the full schedule with video CFG (`video_guidance`) and the VAE
 decodes the predicted frames; the action head then reads features from that trajectory.

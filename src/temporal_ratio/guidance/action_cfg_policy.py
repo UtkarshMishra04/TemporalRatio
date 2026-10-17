@@ -75,7 +75,7 @@ class ActionCFGWrapper(_base_policy.BasePolicy):
             target_denoising_steps=None,
         )
         feat = velocity_prediction[vp.inference_denoising_steps][vp.feature_id].clone()
-        ts = velocity_timestep[vp.inference_denoising_steps].unsqueeze(0).to(torch.float32) / 1000.0
+        ts = vp.head_timestep(velocity_timestep[vp.inference_denoising_steps])
         return feat, ts, video_latents
 
     def _extract_uncond_features(self, combined_image_pil, num_video_frames, image_sizes):
@@ -108,7 +108,7 @@ class ActionCFGWrapper(_base_policy.BasePolicy):
             target_denoising_steps=None,
         )
         feat = velocity_prediction[vp.inference_denoising_steps][vp.feature_id].clone()
-        ts = velocity_timestep[vp.inference_denoising_steps].unsqueeze(0).to(torch.float32) / 1000.0
+        ts = vp.head_timestep(velocity_timestep[vp.inference_denoising_steps])
 
         # Clean up cache entry
         del pipe._text_embedding_cache[(_UNCOND_PROMPT, None)]

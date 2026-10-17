@@ -70,16 +70,17 @@ def test_eval_command_suite_selection():
     assert args[args.index("--task_ids") + 1: args.index("--task_ids") + 3] == ["0", "3"]
 
 
-def test_action_first_frame_drop_prob(monkeypatch):
+@pytest.mark.parametrize("key", ["action_first_frame_drop_prob", "state_dropout_rate"])
+def test_action_head_dropout_options(monkeypatch, key):
     monkeypatch.setenv("TR_FINETUNE_FROM", "/ckpts/yam/480000")
     path = ROOT / "configs/train/abc130k/finetune_from_checkpoint.yaml"
-    exp = loader.load_train(path, ["stages.0.action_first_frame_drop_prob=0.2"])
+    exp = loader.load_train(path, [f"stages.0.{key}=0.2"])
     args = translate.build_stage_args(exp, exp.stages[0]).args
-    assert args[args.index("--action_first_frame_drop_prob") + 1] == "0.2"
+    assert args[args.index(f"--{key}") + 1] == "0.2"
     exp = loader.load_train(path)  # off by default
-    assert "--action_first_frame_drop_prob" not in translate.build_stage_args(exp, exp.stages[0]).args
+    assert f"--{key}" not in translate.build_stage_args(exp, exp.stages[0]).args
     with pytest.raises(ConfigError):
-        loader.load_train(path, ["stages.0.action_first_frame_drop_prob=1"])
+        loader.load_train(path, [f"stages.0.{key}=1"])
 
 
 def test_errors_in_heldout_std_units():

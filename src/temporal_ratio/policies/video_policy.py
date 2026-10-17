@@ -38,6 +38,20 @@ BasePolicy: TypeAlias = _base_policy.BasePolicy
 log = logging.getLogger(__name__)
 
 
+def head_timestep(timestep: torch.Tensor, train_timesteps: torch.Tensor) -> torch.Tensor:
+    """Video timestep for the action head, shape ``(1,)``, from a sampling-schedule timestep (0-1000).
+
+    The action heads are trained on the fraction ``u`` in [0, 1) that the DiT's training scheduler
+    maps to the noise level of the features (``RectifiedFlow.get_discrete_timestamp``:
+    ``timesteps[int(u * N)]``), so inference returns ``index / N`` of the training timestep nearest
+    to ``timestep`` (e.g. u = 0.336 for sigma 0.908 with shift 5).
+    """
+    t = timestep.reshape(1).to(torch.float32)
+    grid = train_timesteps.to(device=t.device, dtype=torch.float32)
+    index = torch.argmin((grid - t).abs())
+    return (index.to(torch.float32) / len(grid)).reshape(1)
+
+
 def _to_numpy(outputs: dict) -> dict:
     return jax.tree.map(lambda x: np.asarray(x[0, ...].detach().cpu()), outputs)
 
@@ -129,6 +143,11 @@ class VideoModelPolicyWrapper(BasePolicy):
         self._input_transform = _transforms.compose(self.transforms)
         self.device = device
 
+    def head_timestep(self, timestep: torch.Tensor) -> torch.Tensor:
+        """The action head's video timestep for features at sampling timestep ``timestep``."""
+        train_timesteps = self.video_model.pipe.model.rectified_flow.noise_scheduler.timesteps
+        return head_timestep(timestep, train_timesteps)
+
     # ------------------------------------------------------------------ inputs
     def make_wan_images(self, inputs: dict) -> dict:
         """Tile the setup's cameras left to right into ``inputs["wan_images_latents"]``."""
@@ -185,7 +204,7 @@ class VideoModelPolicyWrapper(BasePolicy):
             video_np = (((video + 1) / 2).clamp(0, 1) * 255).cpu().numpy().astype(np.uint8)
 
         feature = velocity[self.inference_denoising_steps][self.feature_id].clone()
-        timestep = timesteps[self.inference_denoising_steps].unsqueeze(0).to(torch.float32) / 1000.0
+        timestep = self.head_timestep(timesteps[self.inference_denoising_steps])
         expected = latent_shape[0] * latent_shape[1] * latent_shape[2]
         if feature.shape[1] != expected:
             raise RuntimeError(f"expected {expected} feature tokens, got {tuple(feature.shape)}")

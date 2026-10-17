@@ -187,6 +187,8 @@ def build_stage_args(exp: TrainExperiment, stage: StageSpec) -> StageCommand:
         args += ["--keep_every", str(stage.keep_every)]
     if stage.action_first_frame_drop_prob > 0:
         args += ["--action_first_frame_drop_prob", _fmt(stage.action_first_frame_drop_prob)]
+    if stage.state_dropout_rate > 0:
+        args += ["--state_dropout_rate", _fmt(stage.state_dropout_rate)]
     gradient_checkpointing = o.gradient_checkpointing if stage.gradient_checkpointing is None else stage.gradient_checkpointing
     if not gradient_checkpointing:
         args.append("--no_gradient_checkpointing")

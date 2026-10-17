@@ -620,6 +620,7 @@ def train_loop(args):
                 with amp_ctx:
                     action_losses = joint_model_unwrapped.action_model(
                         observation, actions_f, features, tau_f,
+                        state_dropout_rate=joint_model_unwrapped.state_dropout_rate,
                         first_frame_drop_prob=joint_model_unwrapped.first_frame_drop_prob,
                     )
                 action_loss = action_losses.mean()
