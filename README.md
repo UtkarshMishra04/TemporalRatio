@@ -10,11 +10,16 @@ Code for **Understanding and Mitigating the Video-Action Generalization Gap via 
 (Utkarsh A. Mishra, Yongxin Chen, Danfei Xu, Yang Liu, Xi Chen, Jiayuan Mao).
 [Paper](https://arxiv.org/abs/2607.08127) · [Project page](https://umishra.me/temporal-ratio/)
 
+> **This `eval` branch contains only the inference server**: loading released checkpoints, serving
+> them over websockets (with optional predicted-video output) and the Python API. Training,
+> open-loop and closed-loop evaluation, data conversion and the TR analysis scripts are on
+> [`master`](https://github.com/UtkarshMishra04/TemporalRatio/tree/master).
+
 Video-action models (VAMs) predict robot actions from the internal features of a video generation
-model. This repository trains and runs such a model: a
+model. This repository runs such a model: a
 [Cosmos-Predict2.5](https://github.com/nvidia-cosmos/cosmos-predict2.5) 2B Video2World DiT whose
 block-19 features condition a π0-style Gemma-300M flow-matching action head. It also implements
-the paper's analysis and method:
+the paper's inference-time method:
 
 - **Temporal Ratio (TR)**: how much the action head's attention goes to *future* predicted latent
   frames relative to the current frame.
@@ -30,28 +35,27 @@ the paper's analysis and method:
  robot state ────────────────────────────────────────────────────────────────┘      (flow matching)
 ```
 
-**Setting up with a coding agent?** Point it to [AGENT.md](AGENT.md): installation, models, data,
-checkpoints and GPU smoke tests of training, evaluation and serving, with a check after each step.
+**Setting up with a coding agent?** Point it to [AGENT.md](AGENT.md): installation, models,
+checkpoints, serving and a client check, with a check after each step.
 
 ## Repository layout
 
 ```
-configs/                    experiment configs (YAML) — see docs/configs.md
-  base/                     model family defaults (Cosmos-Predict2.5 2B + Gemma-300M, LoRA r32)
-  train/{libero,abc130k}/   training recipes (joint / two-stage / three-stage, LoRA or full, ...)
-  infer/{libero,abc130k}/   inference settings (video steps, guidance, TR logging)
-  eval/libero/              closed-loop LIBERO evaluation
+configs/infer/{libero,abc130k}/   inference settings (video steps, guidance, TR logging) — see docs/configs.md
 src/temporal_ratio/
   cli.py                    the `trvam` command
-  config/                   config schema, loader, translation to trainer arguments, dataset registry
-  models/                   video model wrapper, action head, joint video-action model
-  data/                     LeRobot action data, video datasets, transforms, ABC-130k task lists
-  training/                 trainers (standard and dual-resolution) and their arguments
+  config/                   config schema, loader, dataset registry
+  models/                   video model wrapper, action head
+  data/                     transforms, normalization, ABC-130k task lists
+  training/                 optimizer, sharding and weight-loading helpers used by the model configs
   policies/                 inference policy (video model + action head), robot input/output transforms
   guidance/                 Temporal Ratio and TR-adaptive guidance
-  inference.py, offline.py  policy loading from configs; open-loop evaluation
+  serving/                  websocket policy server
+  inference.py              policy loading from configs, server-side wrappers
 src/cosmos_video/           vendored Cosmos-Predict2.5 (see its README for local changes)
-scripts/                    data conversion, norm stats, LIBERO evaluation, TR analysis, setup
+packages/openpi-client/     websocket client
+scripts/check_server.py     client check of a running server
+scripts/setup/              installation
 tests/                      CPU test suite (runs in CI)
 ```
 
@@ -69,7 +73,7 @@ source .venv/bin/activate
 
 The first run downloads the pretrained models from Hugging Face: `nvidia/Cosmos-Predict2.5-2B`
 (DiT and tokenizer, 4.6 GB) and `nvidia/Cosmos-Reason1-7B` (text encoder, 16.6 GB). See
-[docs/install.md](docs/install.md) for details, LIBERO simulation setup and CPU-only installs.
+[docs/install.md](docs/install.md) for details and CPU-only installs.
 
 ## Checkpoints
 
@@ -88,92 +92,30 @@ preset. `trvam download <repo> --subfolder <dir>` fetches one, and configs also 
 
 ## Quickstart
 
-**Open-loop inference** on recorded episodes. This compares predicted with recorded action
-chunks, logs TR per action-expert layer and optionally renders the predicted future:
-
-```bash
-trvam infer configs/infer/abc130k/yam_pp24.yaml \
-    --set checkpoint=<checkpoint step dir> \
-    --dataset abc130k/fold_and_stack_the_t_shirts --episodes 0 --max-steps 5 \
-    --out results/infer/yam
-# ... and with video generation (full video denoising + VAE decode, written as mp4):
-trvam infer configs/infer/abc130k/yam_pp24.yaml --set checkpoint=<ckpt> --set generate_video=true ...
-```
-
 **Serve** a policy to a robot over websockets (the
 [openpi-client](packages/openpi-client) protocol):
 
 ```bash
 trvam serve configs/infer/libero/no_guidance.yaml --set checkpoint=<ckpt> --port 8000
+trvam serve configs/infer/abc130k/yam_pp24.yaml --set checkpoint=<ckpt> --save-video results/videos
 ```
 
-**Closed-loop LIBERO** evaluation, with or without TR-adaptive guidance:
+A request can ask for the predicted future video with `"generate_video": True` in the observation;
+the response then carries `future_video` (T x H x W x 3 uint8, cameras tiled left to right), and
+`--save-video DIR` also writes it to `DIR/query_<n>.mp4`. Video generation roughly doubles the
+query latency (about 1.5 s action-only and 3 s with video on a GB300).
+
+**Check** a running server with images (one per camera) or random inputs:
 
 ```bash
-trvam eval-libero configs/eval/libero/id.yaml  --set inference.checkpoint=<ckpt>   # 4 ID suites
-trvam eval-libero configs/eval/libero/ood.yaml --set inference.checkpoint=<ckpt>   # 3 OOD suites
+python scripts/check_server.py --port 8000 --random --queries 3
+python scripts/check_server.py --port 8000 --images top.png left_wrist.png right_wrist.png \
+    --prompt "fold the t-shirt" --video-dir results/check_server
 ```
 
-Evaluation reports also give the action errors in units of the evaluated dataset's per-dimension
-action standard deviation, over the whole chunk and over its first `offline.first_k` actions;
-`configs/infer/abc130k/fold_pen_bottle_heldout.yaml` evaluates whole validation episodes.
-`scripts/eval/check_server.py` sends recorded frames to a running server and checks its answers.
-See [docs/inference.md](docs/inference.md) for the inference pipeline, observation formats and
-timings.
-
-## Training
-
-Every run is an experiment config: model, DiT adaptation (`lora` with rank/targets, `full` or
-`frozen`), data, optimizer and one or more **stages** (`joint_full`, `video_only`,
-`frozen_video`, `joint_detach`). `trvam show` prints the resolved config and the exact trainer
-commands; `trvam train` runs them, chaining stages through their latest checkpoints.
-
-```bash
-trvam show  configs/train/libero/two_stage_lora_r32.yaml
-trvam train configs/train/libero/joint_lora_r32.yaml                       # 2 nodes x 8 GPUs by default
-trvam train configs/train/libero/joint_lora_r32.yaml --set distributed.nnodes=1 \
-    --set adaptation.lora.target_modules=[q_proj,k_proj,v_proj] --set stages.0.steps=50000
-trvam train configs/train/libero/joint_full.yaml                           # full fine-tuning of the DiT
-TR_FINETUNE_FROM=<ckpt> trvam train configs/train/libero/finetune_from_checkpoint.yaml
-```
-
-| preset (`configs/train/...`) | recipe | released checkpoint |
-|---|---|---|
-| `libero/joint_lora_r{16,32,64}` | joint video + action training, LoRA on the DiT | `joint_r*` |
-| `libero/joint_full` | joint training, full DiT fine-tuning | `full_joint` |
-| `libero/joint_93f_lora_r{16,32,64}`, `libero/joint_93f_full` | joint training with 93-frame video clips | `joint_93f_r*`, `full_joint_93f` |
-| `libero/two_stage_lora_r{16,32,64}`, `libero/two_stage_full` | video-only adaptation, then the action head on the frozen DiT | `2stage_r*`, `full_2stage` |
-| `libero/two_stage_93f_lora_r32`, `libero/two_stage_93f_full` | as above with 93-frame video clips | `2stage_93f_r*`, `full_2stage_93f` |
-| `libero/two_stage_lora_r32_16k`, `libero/three_stage_93f_lora_r32` | schedules of the Temporal Ratio experiments | |
-| `abc130k/pp24_joint_lora_r32` | joint training on the 22 ABC-130k tasks (dual-resolution trainer) | YAM `878500` |
-| `abc130k/fold_pen_bottle_joint_lora_r32` | the same recipe on T-shirt folding, pen caps and bottle caps | |
-| `abc130k/folding_action_only` | action head only, frozen DiT (folding skill) | |
-| `abc130k/skill_finetune_93f` | per-skill joint fine-tuning with 93-frame video clips | |
-| `*/finetune_from_checkpoint` | continue from a released checkpoint | |
-
-The presets reproduce the trainer arguments of the original runs exactly; the test suite checks
-all of them against the original launch commands. See [docs/configs.md](docs/configs.md) and
-[docs/training.md](docs/training.md).
-
-Every checkpoint holds the full training state, and runs resume from their latest checkpoint by
-default. To train longer, repeat a command with a larger `stages.0.steps`: the run continues with
-a new learning-rate cycle over the added steps. `stages.0.keep_every=<steps>` keeps, for example,
-every epoch's checkpoint ([docs/training.md](docs/training.md#continuing-a-run)).
-
-## Data
-
-- **LIBERO**: actions from [`physical-intelligence/libero`](https://huggingface.co/datasets/physical-intelligence/libero)
-  and video from it plus [`IPEC-COMMUNITY/libero_90_no_noops_lerobot`](https://huggingface.co/datasets/IPEC-COMMUNITY/libero_90_no_noops_lerobot).
-  Both are downloaded on first use; normalization statistics ship in `assets/`.
-- **ABC-130k** ([`XDOF/ABC-130k`](https://huggingface.co/datasets/XDOF/ABC-130k), bimanual YAM):
-  `scripts/data/convert_abc130k_to_lerobot.py` converts the MCAP episodes into the LeRobot layout
-  the YAM checkpoints were trained on. The `fold_pen_bottle` configs use T-shirt folding, pen-cap
-  opening and bottle-cap unscrewing; compute normalization statistics after converting with
-  `scripts/data/compute_norm_stats.py --config-name videoVLA_abc130k_fold_pen_bottle_short --fast`.
-
-See [docs/data.md](docs/data.md), including how to add a robot, and
-[docs/pipeline_abc130k.md](docs/pipeline_abc130k.md) for an end-to-end example (data, evaluation,
-fine-tuning, serving) on ABC-130k T-shirt folding, pen caps and bottle caps.
+**Python API**: `load_policy(loader.load_inference(cfg, ["checkpoint=..."]))` returns the policy;
+`policy.infer(obs)` gives the action chunk. See [docs/inference.md](docs/inference.md) for the
+inference pipeline, observation formats and timings.
 
 ## Temporal Ratio and guidance
 
@@ -183,32 +125,29 @@ flow step. Guided inference combines velocities
 `v = v_c + w_lang (v_c − v_∅) + w_plan (v_plan − v_c)` with weights scaled by
 `s = clip(TR_k / TR_0 − 1, 0, s_max)`. The configs `configs/infer/libero/{flat,tr_adaptive}.yaml`
 select flat and TR-adaptive guidance; [docs/temporal_ratio.md](docs/temporal_ratio.md) gives the
-details and the analysis scripts.
+details.
 
 ## Tests
 
 CI ([workflow](.github/workflows/ci.yml)) runs on every push and pull request:
 
-- **unit tests** on CPU with Python 3.11 and 3.12. They cover config validation, the trainer arguments
-  of every preset against the original launch commands, dataset task lists, evaluation metrics,
-  run continuation and checkpoint retention, TR and guidance math, and a scan for credentials and
+- **unit tests** on CPU with Python 3.11 and 3.12. They cover config validation, dataset task
+  lists, TR and guidance math, the server-side video options, and a scan for credentials and
   internal references;
-- **CLI dry runs** of every training preset and of the LIBERO evaluation;
+- **CLI**: `trvam show` of every inference config;
 - **lint** (ruff) and a **secret scan** of the full git history (gitleaks).
 
 ```bash
 uv venv --python 3.11 && uv pip install -e ".[test]" && .venv/bin/pytest -q   # no GPU needed
 ```
 
-CI has no GPUs; the GPU paths were verified on an NVIDIA GB300:
+CI has no GPUs; the GPU paths were verified on an NVIDIA GB300 (on `master`):
 
 | stage | verified |
 |---|---|
 | installation | `scripts/setup/install.sh` in a fresh environment (aarch64, CUDA 13) |
-| training | joint, two-stage and action-only recipes; fine-tuning released LIBERO and YAM checkpoints; single- and multi-task ABC-130k fine-tuning; continuing a run for more epochs |
-| open-loop evaluation | LIBERO and YAM checkpoints with and without video generation, ABC-130k validation episodes |
-| serving | `trvam serve` with websocket clients: the closed-loop LIBERO evaluator and `scripts/eval/check_server.py` |
-| closed-loop LIBERO | `libero_spatial` with and without TR-adaptive guidance |
+| inference | LIBERO and YAM checkpoints with and without video generation |
+| serving | `trvam serve` with websocket clients |
 
 [docs/checkpoints.md](docs/checkpoints.md#verified) names the checkpoints used.
 [docs/changes.md](docs/changes.md) lists where the release deliberately differs from the research

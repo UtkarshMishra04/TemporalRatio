@@ -22,15 +22,13 @@ jobs:
         run: |
           uv venv --python ${{ matrix.python }}
           uv pip install -e ".[test]"
-      - name: Unit tests (configs, golden launcher equivalence, TR / guidance math, secret scan)
+      - name: Unit tests (configs, TR / guidance math, secret scan)
         run: .venv/bin/pytest -q
-      - name: CLI dry runs
+      - name: CLI
         run: |
-          for f in configs/train/libero/*.yaml configs/train/abc130k/*.yaml; do
-            case "$(basename "$f")" in _*) continue;; esac
-            TR_FINETUNE_FROM=/tmp/ckpt .venv/bin/trvam train "$f" --dry-run > /dev/null
+          for f in configs/infer/*/*.yaml; do
+            .venv/bin/trvam show "$f" > /dev/null
           done
-          TR_CHECKPOINT=/tmp/ckpt .venv/bin/trvam eval-libero configs/eval/libero/id.yaml --dry-run > /dev/null
 
   lint:
     runs-on: ubuntu-latest
@@ -42,8 +40,8 @@ jobs:
         run: >-
           uvx ruff check --select E,F,W,I,B,UP --ignore E501
           src/temporal_ratio/config src/temporal_ratio/cli.py src/temporal_ratio/inference.py
-          src/temporal_ratio/offline.py src/temporal_ratio/guidance/scale.py src/temporal_ratio/guidance/tr.py
-          src/temporal_ratio/data/abc130k.py src/temporal_ratio/data/video_decode.py tests
+          src/temporal_ratio/guidance/scale.py src/temporal_ratio/guidance/tr.py
+          src/temporal_ratio/data/abc130k.py scripts/check_server.py tests
 
   secrets:
     name: Secret scan (gitleaks, full history)

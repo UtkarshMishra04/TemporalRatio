@@ -1,13 +1,13 @@
 """ABC-130k task lists (https://huggingface.co/datasets/XDOF/ABC-130k).
 
-Pure-Python constants shared by the dataset registry, the video datasets and the MCAP -> LeRobot
-converter (``scripts/data/convert_abc130k_to_lerobot.py``). A converted task is a LeRobot v2.1
-dataset with id ``abc130k/<task>`` under ``$HF_LEROBOT_HOME``.
+Pure-Python constants used by the dataset registry (``config/registry.py``). A converted task
+(MCAP -> LeRobot converter on the ``master`` branch) is a LeRobot v2.1 dataset with id
+``abc130k/<task>`` under ``$HF_LEROBOT_HOME``.
 
 The released YAM checkpoints were trained on 24 bimanual tasks ("pp24"). 22 of them exist in
 ABC-130k; ``handoff`` and ``putRelative`` do not. ``PP24_NAMES`` records the correspondence.
 ``EXTRA_TASKS`` are further ABC-130k tasks used here, and ``TASK_GROUPS`` names the task sets that
-have a dataset config (``videoVLA_abc130k_<group>_short``) and a video mixture (``abc130k_<group>``).
+have a dataset config (``videoVLA_abc130k_<group>_short``).
 Validation episodes (the Hub's ``val`` split) are converted to ``abc130k/<task>_val``.
 """
 

@@ -2,7 +2,7 @@
 
 Features:
   * ``_base_: relative/or/absolute.yaml`` (string or list) — deep-merged, child wins.
-  * Dotted overrides: ``["stages.0.steps=200", "adaptation.lora.rank=64"]`` (values parsed as YAML).
+  * Dotted overrides: ``["checkpoint=/path/to/step", "guidance.w_lang=0.2"]`` (values parsed as YAML).
   * Strict construction: unknown keys and invalid ``Literal`` values raise :class:`ConfigError`.
 """
 
@@ -19,12 +19,7 @@ from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 import yaml
 
-from temporal_ratio.config.schema import (
-    ConfigError,
-    InferenceExperiment,
-    LiberoEvalExperiment,
-    TrainExperiment,
-)
+from temporal_ratio.config.schema import ConfigError, InferenceExperiment
 
 T = TypeVar("T")
 
@@ -206,16 +201,6 @@ def from_dict(cls: type[T], data: dict, where: str = "") -> T:
 # --------------------------------------------------------------------------------------------
 
 
-def load_train(path: str | Path, overrides: list[str] | tuple[str, ...] = ()) -> TrainExperiment:
-    tree = _expand_tree(apply_overrides(load_yaml_tree(path), overrides))
-    return from_dict(TrainExperiment, tree).validate()
-
-
 def load_inference(path: str | Path, overrides: list[str] | tuple[str, ...] = ()) -> InferenceExperiment:
     tree = _expand_tree(apply_overrides(load_yaml_tree(path), overrides))
     return from_dict(InferenceExperiment, tree).validate()
-
-
-def load_libero_eval(path: str | Path, overrides: list[str] | tuple[str, ...] = ()) -> LiberoEvalExperiment:
-    tree = _expand_tree(apply_overrides(load_yaml_tree(path), overrides))
-    return from_dict(LiberoEvalExperiment, tree).validate()

@@ -1,3 +1,0 @@
-_base_: two_stage_lora_r32.yaml
-name: libero_two_stage_lora_r64
-adaptation: {lora: {rank: 64, alpha: 64}}

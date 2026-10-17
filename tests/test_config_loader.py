@@ -5,19 +5,10 @@ from pathlib import Path
 import pytest
 
 from temporal_ratio.config import loader
-from temporal_ratio.config.schema import DEFAULT_LORA_TARGETS, ConfigError
+from temporal_ratio.config.schema import ConfigError
 
 ROOT = Path(__file__).resolve().parents[1]
-TRAIN = sorted(p for p in (ROOT / "configs/train").rglob("*.yaml") if not p.name.startswith("_"))
 INFER = sorted((ROOT / "configs/infer").rglob("*.yaml"))
-EVAL = sorted((ROOT / "configs/eval").rglob("*.yaml"))
-
-
-@pytest.mark.parametrize("path", TRAIN, ids=lambda p: str(p.relative_to(ROOT)))
-def test_train_presets_validate(path):
-    exp = loader.load_train(path)
-    assert exp.name
-    assert exp.stages
 
 
 @pytest.mark.parametrize("path", INFER, ids=lambda p: str(p.relative_to(ROOT)))
@@ -25,57 +16,29 @@ def test_inference_presets_validate(path):
     assert loader.load_inference(path).policy_config
 
 
-@pytest.mark.parametrize("path", EVAL, ids=lambda p: str(p.relative_to(ROOT)))
-def test_eval_presets_validate(path):
-    exp = loader.load_libero_eval(path)
-    assert exp.inference.guidance.type == "tr_adaptive"
-
-
-def test_base_inheritance_and_lora_override():
-    exp = loader.load_train(ROOT / "configs/train/libero/joint_lora_r64.yaml")
-    assert exp.adaptation.lora.rank == 64 and exp.adaptation.lora.alpha == 64
-    assert exp.adaptation.lora.target_modules == list(DEFAULT_LORA_TARGETS)
-    assert exp.data.action_dataset == "videoVLA_libero_short"
-
-
 def test_overrides_are_typed():
-    exp = loader.load_train(
-        ROOT / "configs/train/libero/joint_lora_r32.yaml",
-        ["stages.0.steps=200", "adaptation.lora.rank=8", "adaptation.lora.target_modules=[q_proj, v_proj]"],
+    exp = loader.load_inference(
+        ROOT / "configs/infer/libero/tr_adaptive.yaml",
+        ["action_denoising_steps=5", "guidance.w_lang=1", "tr_log_layers=[13]"],
     )
-    assert exp.stages[0].steps == 200
-    assert exp.adaptation.lora.rank == 8
-    assert exp.adaptation.lora.target_modules == ["q_proj", "v_proj"]
+    assert exp.action_denoising_steps == 5
+    assert exp.guidance.w_lang == 1.0 and isinstance(exp.guidance.w_lang, float)
+    assert exp.tr_log_layers == [13]
 
 
 @pytest.mark.parametrize(
     ("override", "message"),
     [
-        ("stages.0.stepz=10", "unknown keys"),
-        ("adaptation.video=qlora", "not one of"),
-        ("adaptation.lora.target_modules=[attn]", "invalid LoRA target_modules"),
-        ("stages.0.mode=video_only", "requires stage modes"),
-        ("stages.0.steps=-5", "steps must be positive"),
-        ("adaptation.lora.rank=abc", "expected an integer"),
-        ("stages.9.steps=1", "out of range"),
+        ("guidance.w_langz=1", "unknown keys"),
+        ("guidance.type=cfg", "not one of"),
+        ("action_denoising_steps=abc", "expected an integer"),
+        ("action_denoising_steps=0", "action_denoising_steps must be positive"),
+        ("tr_log_layers.9=1", "out of range"),
     ],
 )
 def test_invalid_configs_are_rejected(override, message):
     with pytest.raises(ConfigError, match=message):
-        loader.load_train(ROOT / "configs/train/libero/joint_lora_r32.yaml", [override])
-
-
-def test_frozen_lora_warns_but_validates():
-    exp = loader.load_train(ROOT / "configs/train/abc130k/folding_action_only.yaml")
-    assert any("zero initialization" in w for w in exp.warnings)
-    assert any("ignored" in w for w in exp.warnings)
-
-
-def test_dual_resolution_requires_batch_sizes():
-    with pytest.raises(ConfigError, match="video_batch_size"):
-        loader.load_train(
-            ROOT / "configs/train/libero/joint_lora_r32.yaml", ["data.video_num_frames=93"]
-        )
+        loader.load_inference(ROOT / "configs/infer/libero/tr_adaptive.yaml", [override])
 
 
 def test_env_expansion(monkeypatch, tmp_path):

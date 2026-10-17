@@ -3,14 +3,12 @@
 #   hybrid_fullvideo_dir150k_norm629k  full-DiT checkpoints sharing one action head
 #   hybrid_fullvideo_dir175k_norm629k
 # Norm stats are read from the checkpoint's assets/. Example:
-#   trvam infer configs/infer/abc130k/yam_pp24.yaml --set checkpoint=<ckpt> \
-#       --dataset abc130k/fold_and_stack_the_t_shirts --episodes 0 --max-steps 5
+#   trvam serve configs/infer/abc130k/yam_pp24.yaml --set checkpoint=<ckpt> --port 8000
 checkpoint: ${TR_CHECKPOINT:-checkpoints/video_policy_yam/878500}
 policy_config: videoVLA_abc130k_pp24_short
 video_denoising_steps: 6
 feature_extraction_step: 2
 generate_video: false
-replan_every: 10
 tr_log_layers: [2, 5, 10, 13, 15]
 guidance:
   type: none

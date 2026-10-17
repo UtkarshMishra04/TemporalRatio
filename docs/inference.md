@@ -1,14 +1,12 @@
 # Inference
 
 An inference config (`configs/infer/`) names a checkpoint, the robot/dataset config it was trained
-with and the inference settings ([configs.md](configs.md#inference-configs)). The same loader
-(`temporal_ratio.inference.load_policy`) is used by every entry point:
+with and the inference settings ([configs.md](configs.md#fields)). The same loader
+(`temporal_ratio.inference.load_policy`) is used by both entry points:
 
 | entry point | use |
 |---|---|
-| `trvam infer <cfg>` | open-loop evaluation on recorded LeRobot episodes |
 | `trvam serve <cfg>` | websocket policy server for a real robot / external simulator |
-| `trvam eval-libero <eval cfg>` | closed-loop LIBERO evaluation |
 | `load_policy(exp)` | Python API |
 
 ## One policy query
@@ -55,23 +53,6 @@ out = policy.infer(obs, generate_video=True, tr_layers=[2, 10])
 out["actions"].shape, out["future_video"].shape, out["temporal_ratio"]
 ```
 
-## Open-loop evaluation
-
-```bash
-trvam infer configs/infer/libero/no_guidance.yaml --set checkpoint=<ckpt> \
-    --dataset physical-intelligence/libero --episodes 0 12 --max-steps 20 --out results/infer/libero
-```
-
-Every `replan_every` frames the recorded observation and prompt are fed to the policy and the
-predicted chunk is compared with the recorded actions. `report.json` contains per-query action
-MSE / L1, TR per layer and latency, plus per-episode summaries; the errors are also given in units
-of the evaluated dataset's per-dimension action standard deviation (`action_rmse_std`,
-`action_mae_std`, `first_action_mae_std`, from the dataset's statistics; with `offline.first_k`,
-also `first_k_rmse_std` / `first_k_mae_std` over the first `first_k` actions of each chunk); `episode_<e>.npz` holds predicted
-and recorded chunks; with `generate_video=true`, `episode_<e>_step_<t>.mp4` shows the predicted
-future (top) above the recorded one (bottom). Guided configs (`tr_adaptive.yaml`, `flat.yaml`)
-work the same way.
-
 ## Serving
 
 ```bash
@@ -80,19 +61,26 @@ trvam serve configs/infer/abc130k/yam_pp24.yaml --set checkpoint=<ckpt> --port 8
 
 The server speaks the openpi websocket protocol: connect with
 `openpi_client.websocket_client_policy.WebsocketClientPolicy(host, port)` and call
-`client.infer(obs)` with the observation dict above.
+`client.infer(obs)` with the observation dict above. The response holds `actions`,
+`policy_timing`, `server_timing`, `temporal_ratio` (with `tr_log_layers`; string keys) and, with
+guidance, `adaptive_cfg_info`.
 
-## Closed-loop LIBERO
+**Predicted video.** Add `"generate_video": True` (or `False`) to an observation to override the
+config's `generate_video` for that query. The response then also carries `future_video`
+(T x H x W x 3 uint8, the 17 predicted frames with the cameras tiled left to right; frame 0 is the
+decoded conditioning frame); it is absent otherwise. `--save-video DIR` makes the server write
+every returned video to `DIR/query_<n>.mp4` (10 fps); the responses are unchanged. Video
+generation runs the full denoising schedule with video CFG and a VAE decode, roughly doubling the
+query latency (see the timings above).
 
-Requires the LIBERO simulator ([install.md](install.md#libero-simulation-closed-loop-evaluation-only)).
+**Client check.** `scripts/check_server.py` sends observations built from image files (one per
+camera, in the order of the table above) or random images, validates the returned action chunks
+(finite, 2-D) and exits non-zero otherwise; `--video-dir DIR` requests the predicted video and
+saves `query_<n>.mp4` with a contact sheet `query_<n>.png` (frames 0, 4, 8, 12, 16). The robot is
+taken from the server's `policy_config`.
 
 ```bash
-trvam eval-libero configs/eval/libero/id.yaml  --set inference.checkpoint=<ckpt>
-trvam eval-libero configs/eval/libero/ood.yaml --set inference.checkpoint=<ckpt> \
-    --set inference.guidance.type=none
+python scripts/check_server.py --port 8000 --random --queries 3
+python scripts/check_server.py --port 8000 --images top.png left_wrist.png right_wrist.png \
+    --state 0 0 0 0 0 0 0 0 0 0 0 0 0 0 --prompt "fold the t-shirt" --video-dir results/check_server
 ```
-
-The evaluator (`scripts/eval/eval_libero.py`, or `eval_libero_guided.py` with guidance) runs
-`num_trials_per_task` episodes per task and seed, writes one mp4 per rollout
-(`rollout_success_*.mp4` / `rollout_failure_*.mp4`) and, for guided runs, per-episode TR traces
-(`tr_logs/`). It can be parallelized over GPUs with `torchrun --nproc_per_node=N`.

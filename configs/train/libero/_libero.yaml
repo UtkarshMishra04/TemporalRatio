@@ -1,6 +1,0 @@
-# LIBERO: action data = physical-intelligence/libero (LeRobot), video data = LIBERO-10 + LIBERO-90.
-_base_: ../../base/cosmos2b_gemma300m.yaml
-data:
-  action_dataset: videoVLA_libero_short
-  video_dataset: libero
-  video_num_frames: 17

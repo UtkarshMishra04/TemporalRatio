@@ -1,3 +1,0 @@
-_base_: joint_93f_lora_r32.yaml
-name: libero_joint_93f_lora_r16
-adaptation: {lora: {rank: 16, alpha: 16}}

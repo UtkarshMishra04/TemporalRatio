@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from temporal_ratio.config import loader, translate
+from temporal_ratio.config import loader
 from temporal_ratio.guidance import scale as gm
 from temporal_ratio.guidance import tr as trm
 
@@ -88,36 +88,16 @@ def test_guided_velocity_formulas():
         gm.guided_velocity(v_c, v_u, w_lang=1.0, formula="nope")
 
 
-# ------------------------------------------------------------------ inference config -> evaluator
+# ------------------------------------------------------------------ guidance presets
 
 
-def test_guidance_env_for_presets():
+def test_guidance_presets():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1] / "configs/infer/libero"
-    assert translate.guidance_env(loader.load_inference(root / "no_guidance.yaml")) == {}
-    flat = translate.guidance_env(loader.load_inference(root / "flat.yaml"))
-    assert flat["CFG_TR_BASELINE_MODE"] == "flat"
-    assert (flat["CFG_W_BASE_LANG"], flat["CFG_W_BASE_PLAN"], flat["CFG_PLAN_LAT"]) == ("0.1", "0.1", "24")
-    tr = translate.guidance_env(loader.load_inference(root / "tr_adaptive.yaml"))
-    assert tr["CFG_TR_BASELINE_MODE"] == "per_episode"
-    assert tr["CFG_LEGACY_FLAT_FLOOR"] == "0"
-    assert tr["CFG_TR_LAYER"] == "13"
-    action_flat = translate.guidance_env(loader.load_inference(root / "flat.yaml", ["guidance.space=action"]))
-    assert action_flat["CFG_TR_BASELINE_MODE"] == "action_flat"
-
-
-def test_libero_eval_command():
-    from pathlib import Path
-
-    root = Path(__file__).resolve().parents[1] / "configs/eval/libero"
-    exp = loader.load_libero_eval(root / "ood.yaml", ["inference.checkpoint=/ckpts/run/30000"])
-    cmd = translate.build_libero_eval(exp, seed=7)
-    assert cmd.script.endswith("eval_libero_guided.py")
-    assert "--eval_ood" in cmd.args
-    assert cmd.args[cmd.args.index("--inference_denoising_steps") + 1] == "2"
-    assert cmd.args[cmd.args.index("--mode") + 1] == "videoVLA_libero_short_diffsteps_6"
-    assert cmd.env["CHECKPOINT_DIR"] == "/ckpts/run/30000"
-    assert cmd.env["TR_SKIP_VIDEO_DECODE"] == "1"  # generate_video: false
-    exp2 = loader.load_libero_eval(root / "id.yaml", ["inference.checkpoint=/c/1", "inference.generate_video=true"])
-    assert "TR_SKIP_VIDEO_DECODE" not in translate.build_libero_eval(exp2, seed=7).env
+    assert loader.load_inference(root / "no_guidance.yaml").guidance.type == "none"
+    flat = loader.load_inference(root / "flat.yaml").guidance
+    assert (flat.type, flat.space, flat.w_lang, flat.w_plan, flat.plan_latent_frames) == ("flat", "velocity", 0.1, 0.1, 24)
+    tr = loader.load_inference(root / "tr_adaptive.yaml").guidance
+    assert (tr.type, tr.tr_baseline, tr.tr_layer, tr.s_max, tr.legacy_flat_floor) == ("tr_adaptive", "per_episode", 13, 2.0, False)
+    assert tr.w_lang == tr.w_plan == 0.1  # inherited from flat.yaml

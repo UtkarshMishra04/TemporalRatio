@@ -1,7 +1,7 @@
 """Build a policy from an inference config (``configs/infer/*``).
 
-Shared by ``trvam infer`` (offline evaluation), ``scripts/serve_policy.py`` (websocket server) and
-the LIBERO evaluators, so all of them load checkpoints identically::
+Used by ``trvam serve`` (websocket server) and the Python API, so both load checkpoints
+identically::
 
     exp = loader.load_inference("configs/infer/libero/no_guidance.yaml", ["checkpoint=..."])
     policy = load_policy(exp)                      # VideoModelPolicyWrapper (or guided wrapper)
@@ -134,7 +134,11 @@ def infer_kwargs(exp: InferenceExperiment, policy: Any) -> dict[str, Any]:
 
 
 class ConfiguredPolicy(_base_policy.BasePolicy):
-    """``infer(obs)`` with the config's options bound (for the websocket server)."""
+    """``infer(obs)`` with the config's options bound (for the websocket server).
+
+    An optional observation key ``generate_video`` (bool) overrides the config's ``generate_video``
+    for that query; the response then carries ``future_video`` (T x H x W x 3 uint8).
+    """
 
     def __init__(self, exp: InferenceExperiment):
         self._exp = exp
@@ -142,7 +146,15 @@ class ConfiguredPolicy(_base_policy.BasePolicy):
         self._kwargs = infer_kwargs(exp, self._policy)
 
     def infer(self, obs: dict) -> dict:  # type: ignore[override]
-        out = self._policy.infer(obs, **self._kwargs)
+        obs = dict(obs)
+        generate_video = obs.pop("generate_video", None)
+        generate_video = self._exp.generate_video if generate_video is None else bool(generate_video)
+        kwargs = dict(self._kwargs)
+        if "generate_video" in kwargs:
+            kwargs["generate_video"] = generate_video
+        elif hasattr(self._policy, "decode_video"):  # guided wrapper: decoding is an attribute
+            self._policy.decode_video = generate_video
+        out = self._policy.infer(obs, **kwargs)
         if out.get("future_video") is None:
             out.pop("future_video", None)
         out.pop("features", None)
@@ -157,3 +169,43 @@ class ConfiguredPolicy(_base_policy.BasePolicy):
     @property
     def metadata(self) -> dict[str, Any]:
         return {"policy_config": self._exp.policy_config, "checkpoint": self._exp.checkpoint}
+
+
+def write_mp4(path: str | pathlib.Path, frames, fps: int = 10) -> pathlib.Path:
+    """Write ``frames`` (T x H x W x 3 uint8) as an mp4 (imageio + ffmpeg)."""
+    import imageio.v2 as imageio
+    import numpy as np
+
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    imageio.mimwrite(path, np.asarray(frames, dtype=np.uint8), fps=fps)
+    return path
+
+
+class VideoSavingPolicy(_base_policy.BasePolicy):
+    """Writes every returned ``future_video`` to ``<out_dir>/query_<n>.mp4`` (``trvam serve --save-video``).
+
+    Frame 0 of the predicted video is the (decoded) conditioning frame; the responses are unchanged.
+    """
+
+    def __init__(self, policy: _base_policy.BasePolicy, out_dir: str | pathlib.Path, fps: int = 10):
+        self._policy = policy
+        self._out_dir = pathlib.Path(out_dir).expanduser()
+        self._fps = fps
+        self._count = 0
+
+    def infer(self, obs: dict) -> dict:  # type: ignore[override]
+        out = self._policy.infer(obs)
+        video = out.get("future_video")
+        if video is not None:
+            path = write_mp4(self._out_dir / f"query_{self._count:05d}.mp4", video, self._fps)
+            log.info(f"wrote {path}")
+        self._count += 1
+        return out
+
+    def reset(self) -> None:
+        self._policy.reset()
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return self._policy.metadata

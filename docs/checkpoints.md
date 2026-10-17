@@ -1,6 +1,6 @@
 # Checkpoints
 
-A checkpoint is a step directory written by the trainers ([training.md](training.md#checkpoints)).
+A checkpoint is a step directory written by the trainers (on the `master` branch).
 Inference needs `model.safetensors`, `metadata.pt`, `assets/**/norm_stats.json` and the DiT weights
 (`video_model_full.pt`, or `lora_adapters/` applied to the pretrained Cosmos-Predict2.5 2B).
 
@@ -17,7 +17,7 @@ Repository: `<LIBERO checkpoints repo>`. All use `policy_config: videoVLA_libero
 `configs/infer/libero/`) and read DiT block 19, except `*_L17` (block 17; picked up from the
 checkpoint metadata).
 
-| directory | training preset |
+| directory | training preset (`configs/train/` on `master`) |
 |---|---|
 | `checkpoints/joint_r16/{25k,100k}` | `libero/joint_lora_r16` |
 | `checkpoints/joint_r32/{25k,100k}` | `libero/joint_lora_r32` |
@@ -49,22 +49,12 @@ checkpoint. Trained on 24 bimanual tasks, 22 of which are in ABC-130k.
 
 ## Verified
 
-Checked with this repository on one NVIDIA GB300:
+Checked on one NVIDIA GB300 with the `master` branch, whose inference code this branch shares:
 
-- open-loop inference with and without video generation (`trvam infer`): LIBERO `joint_r32/25k`,
-  `2stage_r32/100k`, `full_joint/85k` on `physical-intelligence/libero` episodes; YAM `878500`
-  (merged DiT and base + LoRA adapters), `hybrid_fullvideo_dir150k_norm629k` and
-  `hybrid_fullvideo_dir175k_norm629k` on converted ABC-130k episodes;
-- TR-adaptive guidance, the websocket server and closed-loop LIBERO (`libero_spatial`, with and
-  without guidance) with `joint_r32/25k`;
-- fine-tuning `joint_r32/25k` and `hybrid_fullvideo_dir150k_norm629k`
-  (`*/finetune_from_checkpoint.yaml`) and inference from the resulting checkpoints.
-- fine-tuning a YAM checkpoint on single ABC-130k tasks (`folding`, `pen_caps`, `assembly`) and on
-  the three together, continuing such a run for more epochs (`resume` with a larger step budget),
-  and evaluating the results on whole validation episodes
-  (`configs/infer/abc130k/fold_pen_bottle_heldout.yaml`);
-- serving a fine-tuned checkpoint with `trvam serve` and querying it with
-  `scripts/eval/check_server.py`, whose action errors match the open-loop evaluation of the same
-  frames.
+- inference with and without video generation: LIBERO `joint_r32/25k`, `2stage_r32/100k`,
+  `full_joint/85k`; YAM `878500` (merged DiT and base + LoRA adapters),
+  `hybrid_fullvideo_dir150k_norm629k` and `hybrid_fullvideo_dir175k_norm629k`;
+- TR-adaptive guidance and the websocket server with `joint_r32/25k`;
+- serving a fine-tuned YAM checkpoint with `trvam serve` to a websocket client.
 
 The other LIBERO checkpoints have the same format and configuration.

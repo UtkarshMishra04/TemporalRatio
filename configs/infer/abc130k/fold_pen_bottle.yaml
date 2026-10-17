@@ -1,16 +1,5 @@
-# Open-loop evaluation on the validation episodes of T-shirt folding, pen-cap opening and
-# bottle-cap unscrewing (ABC-130k):
-#   trvam infer configs/infer/abc130k/fold_pen_bottle.yaml --set checkpoint=<ckpt>
-# For released YAM checkpoints and checkpoints trained with configs/train/abc130k/*; the
-# normalization statistics come from the checkpoint.
+# Released YAM checkpoints fine-tuned on T-shirt folding, pen-cap opening and bottle-cap
+# unscrewing (ABC-130k); the normalization statistics come from the checkpoint:
+#   trvam serve configs/infer/abc130k/fold_pen_bottle.yaml --set checkpoint=<ckpt>
 _base_: yam_pp24.yaml
 policy_config: videoVLA_abc130k_fold_pen_bottle_short
-offline:
-  datasets:
-    - abc130k/fold_and_stack_the_t_shirts_val
-    - abc130k/open_the_pen_caps_val
-    - abc130k/unscrew_the_bottle_caps_val
-  episodes: [0, 1, 2, 3, 4]
-  max_steps: 20                 # policy queries per episode, one every replan_every frames
-  first_k: 25                   # also report errors over the first 25 actions of each chunk
-  output_dir: results/infer/fold_pen_bottle

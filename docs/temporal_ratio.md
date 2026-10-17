@@ -16,7 +16,7 @@ the observed frame. Implementations: `temporal_ratio.guidance.tr` (reference com
 `VideoVLAPytorch.sample_actions_adaptive_cfg` / `_compute_tr_from_storage` (computed during
 inference from attention hooks).
 
-`trvam infer` logs TR for `tr_log_layers` at every policy query (`report.json`), and
+The server returns TR for `tr_log_layers` with every policy query, and
 `VideoModelPolicyWrapper.infer(..., tr_layers=[...])` returns it as `temporal_ratio`.
 
 ## Guidance
@@ -49,12 +49,3 @@ follows the method as written.
 
 The math is in `temporal_ratio.guidance.scale` (unit-tested); the policy wrapper that runs the
 three branches is `temporal_ratio.guidance.tr_adaptive_policy.AdaptiveActionCFGWrapper`.
-
-## Analysis scripts
-
-| script | purpose |
-|---|---|
-| `scripts/analysis/tr_probe.py` | TR across layers / denoising steps for LIBERO prompts and frames |
-| `scripts/analysis/tr_probe_analyze.py` | statistics and plots of probe outputs |
-| `scripts/analysis/tr_calibrate_baseline.py` | fixed TR baselines per checkpoint |
-| `scripts/analysis/per_suite_tr_table.py` | TR trajectories of LIBERO rollouts per suite (`--results <eval output>`) |

@@ -1,5 +1,0 @@
-# Closed-loop LIBERO evaluation on the compositional OOD suites (spatial/object/goal OOD).
-_base_: id.yaml
-eval:
-  split: ood
-  output_dir: results/libero/ood

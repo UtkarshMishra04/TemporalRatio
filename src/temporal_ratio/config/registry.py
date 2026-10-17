@@ -158,9 +158,10 @@ class DataConfigFactory(abc.ABC):
     def _load_norm_stats(self, assets_dir: epath.Path, asset_id: str | None) -> dict[str, _transforms.NormStats] | None:
         """Load ``<assets_dir>/<asset_id>/norm_stats.json``.
 
-        ``assets_dir`` is ``TrainConfig.assets_dirs`` (``<repo>/assets/<config name>``); create the
-        file with ``scripts/data/compute_norm_stats.py``. ``$NORM_STATS_PATH`` (a norm_stats.json, or
-        a directory containing exactly one, e.g. a checkpoint's ``assets/``) overrides the lookup.
+        ``assets_dir`` is ``TrainConfig.assets_dirs`` (``<repo>/assets/<config name>``). Released
+        checkpoints carry their statistics in ``<checkpoint>/assets/``. ``$NORM_STATS_PATH`` (a
+        norm_stats.json, or a directory containing exactly one, e.g. a checkpoint's ``assets/``)
+        overrides the lookup.
         """
         override = os.environ.get("NORM_STATS_PATH")
         if override:
@@ -171,8 +172,8 @@ class DataConfigFactory(abc.ABC):
             return None
         data_assets_dir = pathlib.Path(str(assets_dir)) / asset_id
         if not (data_assets_dir / "norm_stats.json").exists():
-            # Fine for inference (statistics come from the checkpoint); training needs them.
-            logging.info(f"No norm stats at {data_assets_dir} (create them with scripts/data/compute_norm_stats.py)")
+            # Fine for inference: the statistics come from the checkpoint or $NORM_STATS_PATH.
+            logging.info(f"No norm stats at {data_assets_dir} (using the checkpoint's or $NORM_STATS_PATH)")
             return None
         logging.info(f"Loaded norm stats from {data_assets_dir}")
         return _normalize.load(data_assets_dir)
@@ -274,7 +275,7 @@ class LeRobotLiberoDataConfig(DataConfigFactory):
 
 @dataclasses.dataclass(frozen=True)
 class LeRobotABC130kDataConfig(DataConfigFactory):
-    """Bimanual YAM data in the layout written by ``scripts/data/convert_abc130k_to_lerobot.py``.
+    """Bimanual YAM data in the layout of the ABC-130k converter (on the ``master`` branch).
 
     Three cameras (``left_image`` = top, ``left_wrist_left``, ``right_wrist_left``), 14-D state and
     actions ``[left joints 1-6, left gripper, right joints 1-6, right gripper]``. Further tasks
@@ -450,8 +451,7 @@ def _abc130k_config(name: str, repo_ids: tuple[str, ...], num_train_steps: int) 
     )
 
 
-# Named robot/dataset configs. The trainers take one of these names as their first argument and
-# experiment YAMLs reference them as ``data.action_dataset`` / ``policy_config``.
+# Named robot/dataset configs. Inference YAMLs reference them as ``policy_config``.
 _CONFIGS = [
     # LIBERO (physical-intelligence/libero): two 224x224 cameras tiled to 224x448, 17-step chunks.
     TrainConfig(
