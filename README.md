@@ -76,15 +76,15 @@ The first run downloads the pretrained models from Hugging Face: `nvidia/Cosmos-
 | checkpoints | robot / data | Hugging Face |
 |---|---|---|
 | LIBERO policies: joint, two-stage and full DiT fine-tuning, 17- and 93-frame video, LoRA ranks 16 to 64 | Franka (simulation), LIBERO | 🤗 *link coming soon* |
-| Bimanual YAM policies trained on 24 tasks (22 of them in ABC-130k) | YAM, ABC-130k | 🤗 *link coming soon* |
+| Bimanual YAM policies: a 24-task policy (22 of the tasks are in ABC-130k) and a hybrid with a separately fine-tuned video model, fine-tunes for T-shirt folding, pen-cap opening and bottle-cap unscrewing, and a goal-conditioned long-horizon video model | YAM, ABC-130k | 🤗 [imishutk0410/TemporalRatio](https://huggingface.co/imishutk0410/TemporalRatio) |
 
-<!-- Fill in the Hugging Face repository links here and in docs/checkpoints.md when they are published. -->
+<!-- Fill in the LIBERO repository link here and in docs/checkpoints.md when it is published. -->
 
 A checkpoint is a step directory with `model.safetensors` (action head), `video_model_full.pt`
 (fine-tuned DiT) and/or `lora_adapters/`, `metadata.pt` and `assets/**/norm_stats.json`.
 [docs/checkpoints.md](docs/checkpoints.md) lists every released checkpoint with its training
 preset. `trvam download <repo> --subfolder <dir>` fetches one, and configs also accept
-`checkpoint: hf://<owner>/<repo>/<dir>`.
+`checkpoint: hf://<owner>/<repo>/<dir>` (e.g. `hf://imishutk0410/TemporalRatio/base`).
 
 ## Quickstart
 

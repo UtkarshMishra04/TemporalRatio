@@ -9,7 +9,7 @@ trvam download <repo> --subfolder <dir> --out checkpoints/      # or in a config
 #   checkpoint: hf://<repo>/<dir>
 ```
 
-<!-- Repository ids are filled in when the checkpoints are published. -->
+<!-- The LIBERO repository id is filled in when those checkpoints are published. -->
 
 ## LIBERO
 
@@ -37,15 +37,21 @@ LIBERO normalization statistics are identical for all of them (and ship in `asse
 
 ## Bimanual YAM (ABC-130k)
 
-Repository: `<YAM checkpoints repo>`. Use `configs/infer/abc130k/yam_pp24.yaml`
-(`policy_config: videoVLA_abc130k_pp24_short`); the normalization statistics come from the
-checkpoint. Trained on 24 bimanual tasks, 22 of which are in ABC-130k.
+Repository: [`imishutk0410/TemporalRatio`](https://huggingface.co/imishutk0410/TemporalRatio)
+(`checkpoint: hf://imishutk0410/TemporalRatio/<directory>`). The normalization statistics come from
+the checkpoint.
 
-| directory | content |
-|---|---|
-| `878500` | step 878,500 of the 24-task joint run (`abc130k/pp24_joint_lora_r32`): action head, `lora_adapters/` and the merged `video_model_full.pt` (both give identical outputs), EMA and optimizer state |
-| `hybrid_fullvideo_dir150k_norm629k` | action head of the same run (step 629,500) with a separately fine-tuned full DiT (`video_model_full.pt`) |
-| `hybrid_fullvideo_dir175k_norm629k` | the same action head with another full-DiT checkpoint |
+| directory | content | config |
+|---|---|---|
+| `base` | multi-task policy for 24 bimanual tasks, 22 of which are in ABC-130k | `configs/infer/abc130k/yam_pp24.yaml` |
+| `hybrid` | the multi-task action head with a separately fine-tuned full DiT | `configs/infer/abc130k/yam_pp24.yaml` |
+| `task_finetunes/fold_tshirts` | `base` fine-tuned on T-shirt folding | `configs/infer/abc130k/fold_pen_bottle.yaml` with `policy_config=videoVLA_abc130k_folding_short` |
+| `task_finetunes/pen_caps` | `base` fine-tuned on pen-cap opening | `configs/infer/abc130k/fold_pen_bottle.yaml` with `policy_config=videoVLA_abc130k_pen_caps_short` |
+| `task_finetunes/bottle_caps` | `base` fine-tuned on bottle-cap unscrewing | `configs/infer/abc130k/fold_pen_bottle.yaml` with `policy_config=videoVLA_abc130k_assembly_short` |
+| `longhorizon_video/goal_conditioned` | `base` with its DiT fine-tuned for goal-conditioned, long-horizon video of the three tasks above; `base`'s action head | `configs/infer/abc130k/fold_pen_bottle.yaml` |
+
+Each directory holds the action head (`model.safetensors`), the DiT (`video_model_full.pt`, LoRA
+merged in or fully fine-tuned), `metadata.pt` and the normalization statistics.
 
 ## Verified
 
